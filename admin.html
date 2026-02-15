@@ -15,47 +15,65 @@
 
 <script>
 
-const owner="w35107815-afk";
+const owner="あなたのGitHub名";
 const repo="croxy-control";
-const path="control.json";
+const tokenInput=()=>document.getElementById("token").value.trim();
 
-async function setProxy(state){
-
- const token=document.getElementById("token").value.trim();
- const device=document.getElementById("device").value.trim();
+async function loadDevices(){
 
  const headers={
-   Authorization:"token "+token,
+   Authorization:"Bearer "+tokenInput(),
    Accept:"application/vnd.github+json"
  };
 
- // control.json取得
- let r=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{headers});
+ let r=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/devices.json`,{headers});
  let j=await r.json();
+ let list=JSON.parse(atob(j.content));
 
- let content=JSON.parse(atob(j.content));
+ let html="";
 
- if(device){
-   content.devices[device]=state;
- }else{
-   content.global=state;
+ for(let id in list){
+   html+=`
+   <div>
+     ${id}
+     <button onclick="setDevice('${id}',true)">ON</button>
+     <button onclick="setDevice('${id}',false)">OFF</button>
+   </div>`;
  }
 
- let updated=btoa(JSON.stringify(content,null,2));
+ document.getElementById("devices").innerHTML=html;
+}
 
- // 更新
- await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{
+async function setDevice(id,state){
+
+ const headers={
+   Authorization:"Bearer "+tokenInput(),
+   Accept:"application/vnd.github+json"
+ };
+
+ let r=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/control.json`,{headers});
+ let j=await r.json();
+ let data=JSON.parse(atob(j.content));
+
+ data.devices[id]=state;
+
+ let updated=btoa(JSON.stringify(data,null,2));
+
+ await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/control.json`,{
    method:"PUT",
    headers,
    body:JSON.stringify({
-     message:"update proxy",
+     message:"update device",
      content:updated,
      sha:j.sha
    })
  });
 
- document.getElementById("log").textContent="更新しました";
-
+ alert("更新しました");
 }
 
 </script>
+
+<div id="devices"></div>
+<button onclick="loadDevices()">端末一覧読み込み</button>
+
