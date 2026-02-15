@@ -23,7 +23,6 @@ GitHub Token:
 <button class="save" onclick="save()">保存（即反映）</button>
 
 <script>
-<script>
 
 const CONTROL_URL="./control.json";
 const REGISTER_URL="./register.json";
@@ -36,12 +35,10 @@ async function load(){
 
   try{
 
-    // control.json
     const res=await fetch(CONTROL_URL+"?t="+Date.now());
     if(!res.ok) throw new Error("control.json fetch失敗");
     data=await res.json();
 
-    // register.json（存在すれば読む）
     try{
       const r=await fetch(REGISTER_URL+"?t="+Date.now());
       if(r.ok){
@@ -58,7 +55,6 @@ async function load(){
       console.warn("register.json skip");
     }
 
-    // 描画
     list.innerHTML="";
 
     Object.keys(data.devices).forEach(id=>{
@@ -91,7 +87,6 @@ load();
 
 </script>
 
-</script>
-
 </body>
 </html>
+
