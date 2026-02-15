@@ -23,103 +23,45 @@ GitHub Token:
 <button class="save" onclick="save()">保存（即反映）</button>
 
 <script>
-const USER="w35107815-afk";
-const REPO="croxy-control";
-const FILE="control.json";
+<script>
 
-let sha="";
+const CONTROL_URL="./control.json";
+const REGISTER_URL="./register.json";
 let data={devices:{}};
 
 async function load(){
 
- const res=await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`);
- const json=await res.json();
+  const list=document.getElementById("list");
+  list.textContent="読み込み中...";
 
- sha=json.sha;
- data=JSON.parse(atob(json.content));
-
- const list=document.getElementById("list");
- list.innerHTML="";
-
- Object.keys(data.devices).forEach(id=>{
-
-   const row=document.createElement("div");
-   row.className="row";
-
-   const label=document.createElement("span");
-   label.textContent=id;
-
-   const btn=document.createElement("button");
-   btn.textContent=data.devices[id]?"ON":"OFF";
-
-   btn.onclick=()=>{
-     data.devices[id]=!data.devices[id];
-     btn.textContent=data.devices[id]?"ON":"OFF";
-   };
-
-   row.appendChild(label);
-   row.appendChild(btn);
-   list.appendChild(row);
- });
-
-}
-
-async function save(){
-
- const token=document.getElementById("token").value.trim();
- if(!token){ alert("Token入れてください"); return; }
-
- const content=btoa(JSON.stringify(data,null,2));
-
- const res=await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`,{
-   method:"PUT",
-   headers:{
-     "Authorization":"token "+token,
-     "Content-Type":"application/json"
-   },
-   body:JSON.stringify({
-     message:"update control",
-     content:content,
-     sha:sha
-   })
- });
-
- if(res.ok){
-   alert("保存成功！数秒で反映されます");
-   load();
- }else{
-   alert("保存失敗（Tokenか権限を確認）");
- }
-
-}
-
-async function load(){
   try{
 
-    const res=await fetch("./control.json?t="+Date.now());
+    // control.json
+    const res=await fetch(CONTROL_URL+"?t="+Date.now());
+    if(!res.ok) throw new Error("control.json fetch失敗");
     data=await res.json();
 
-    // register.json読む（安全版）
+    // register.json（存在すれば読む）
     try{
-      const r=await fetch("./register.json?t="+Date.now());
-      const reg=await r.json();
-
-      if(reg.requests){
-        reg.requests.forEach(id=>{
-          if(!data.devices[id]){
-            data.devices[id]=false;
-          }
-        });
+      const r=await fetch(REGISTER_URL+"?t="+Date.now());
+      if(r.ok){
+        const reg=await r.json();
+        if(reg.requests){
+          reg.requests.forEach(id=>{
+            if(!data.devices[id]){
+              data.devices[id]=false;
+            }
+          });
+        }
       }
     }catch(e){
-      console.warn("register.json 読み込み失敗",e);
+      console.warn("register.json skip");
     }
 
-    const list=document.getElementById("list");
+    // 描画
     list.innerHTML="";
 
     Object.keys(data.devices).forEach(id=>{
-
       const row=document.createElement("div");
       row.className="row";
 
@@ -137,14 +79,17 @@ async function load(){
       row.appendChild(label);
       row.appendChild(btn);
       list.appendChild(row);
-
     });
 
   }catch(e){
-    document.getElementById("list").textContent="読み込み失敗";
+    list.textContent="読み込み失敗（control.json確認）";
     console.error(e);
   }
 }
+
+load();
+
+</script>
 
 </script>
 
