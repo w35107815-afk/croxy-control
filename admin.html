@@ -93,19 +93,58 @@ async function save(){
 
 }
 
-load();
- // register.jsonも読む
-try{
- const r=await fetch("./register.json?t="+Date.now());
- const reg=await r.json();
+async function load(){
+  try{
 
- reg.requests.forEach(id=>{
-   if(!data.devices[id]){
-     data.devices[id]=false;
-   }
- });
+    const res=await fetch("./control.json?t="+Date.now());
+    data=await res.json();
 
-}catch(e){}
+    // register.json読む（安全版）
+    try{
+      const r=await fetch("./register.json?t="+Date.now());
+      const reg=await r.json();
+
+      if(reg.requests){
+        reg.requests.forEach(id=>{
+          if(!data.devices[id]){
+            data.devices[id]=false;
+          }
+        });
+      }
+    }catch(e){
+      console.warn("register.json 読み込み失敗",e);
+    }
+
+    const list=document.getElementById("list");
+    list.innerHTML="";
+
+    Object.keys(data.devices).forEach(id=>{
+
+      const row=document.createElement("div");
+      row.className="row";
+
+      const label=document.createElement("span");
+      label.textContent=id;
+
+      const btn=document.createElement("button");
+      btn.textContent=data.devices[id]?"ON":"OFF";
+
+      btn.onclick=()=>{
+        data.devices[id]=!data.devices[id];
+        btn.textContent=data.devices[id]?"ON":"OFF";
+      };
+
+      row.appendChild(label);
+      row.appendChild(btn);
+      list.appendChild(row);
+
+    });
+
+  }catch(e){
+    document.getElementById("list").textContent="読み込み失敗";
+    console.error(e);
+  }
+}
 
 </script>
 
