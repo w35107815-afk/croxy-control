@@ -1,4 +1,5 @@
 {
-  "global": true,
-  "devices": {}
+  "devices": {
+    "member001": true
+  }
 }
