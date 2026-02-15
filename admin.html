@@ -4,79 +4,93 @@
 <meta charset="utf-8">
 <title>Croxy Control Panel</title>
 <style>
-body{
-  font-family:sans-serif;
-  max-width:700px;
-  margin:40px auto;
-}
-.row{
-  display:flex;
-  justify-content:space-between;
-  padding:8px;
-  border-bottom:1px solid #ddd;
-}
-button{
-  padding:6px 12px;
-  font-size:14px;
-}
-.save{
-  margin-top:20px;
-  font-size:16px;
-  padding:10px 20px;
-}
+body{font-family:sans-serif;max-width:700px;margin:40px auto}
+.row{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #ddd}
+button{padding:6px 12px}
+.save{margin-top:20px;font-size:16px;padding:10px 20px}
+input{width:100%;padding:8px;margin:10px 0}
 </style>
 </head>
-
 <body>
 
-<h2>CroxyProxy 管理画面</h2>
+<h2>CroxyProxy 管理画面（自動保存版）</h2>
+
+GitHub Token:
+<input id="token" placeholder="ghp_xxxxx">
 
 <div id="list">読み込み中...</div>
 
-<button class="save" onclick="save()">保存（JSONコピー）</button>
+<button class="save" onclick="save()">保存（即反映）</button>
 
 <script>
-const CONTROL_URL="./control.json";
+const USER="w35107815-afk";
+const REPO="croxy-control";
+const FILE="control.json";
+
+let sha="";
 let data={devices:{}};
 
 async function load(){
-  try{
-    const res=await fetch(CONTROL_URL+"?t="+Date.now());
-    data=await res.json();
 
-    const list=document.getElementById("list");
-    list.innerHTML="";
+ const res=await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`);
+ const json=await res.json();
 
-    Object.keys(data.devices).forEach(id=>{
-      const row=document.createElement("div");
-      row.className="row";
+ sha=json.sha;
+ data=JSON.parse(atob(json.content));
 
-      const label=document.createElement("span");
-      label.textContent=id;
+ const list=document.getElementById("list");
+ list.innerHTML="";
 
-      const btn=document.createElement("button");
-      btn.textContent=data.devices[id]?"ON":"OFF";
+ Object.keys(data.devices).forEach(id=>{
 
-      btn.onclick=()=>{
-        data.devices[id]=!data.devices[id];
-        btn.textContent=data.devices[id]?"ON":"OFF";
-      };
+   const row=document.createElement("div");
+   row.className="row";
 
-      row.appendChild(label);
-      row.appendChild(btn);
-      list.appendChild(row);
-    });
+   const label=document.createElement("span");
+   label.textContent=id;
 
-  }catch(e){
-    document.getElementById("list").textContent="control.json を読み込めません";
-    console.error(e);
-  }
+   const btn=document.createElement("button");
+   btn.textContent=data.devices[id]?"ON":"OFF";
+
+   btn.onclick=()=>{
+     data.devices[id]=!data.devices[id];
+     btn.textContent=data.devices[id]?"ON":"OFF";
+   };
+
+   row.appendChild(label);
+   row.appendChild(btn);
+   list.appendChild(row);
+ });
+
 }
 
-function save(){
-  const text=JSON.stringify(data,null,2);
-  console.log(text);
-  prompt("このJSONをコピーして GitHub の control.json に貼り付けて保存してください",text);
+async function save(){
+
+ const token=document.getElementById("token").value.trim();
+ if(!token){ alert("Token入れてください"); return; }
+
+ const content=btoa(JSON.stringify(data,null,2));
+
+ const res=await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`,{
+   method:"PUT",
+   headers:{
+     "Authorization":"token "+token,
+     "Content-Type":"application/json"
+   },
+   body:JSON.stringify({
+     message:"update control",
+     content:content,
+     sha:sha
+   })
+ });
+
+ if(res.ok){
+   alert("保存成功！数秒で反映されます");
+   load();
+ }else{
+   alert("保存失敗（Tokenか権限を確認）");
+ }
+
 }
 
 load();
@@ -84,4 +98,3 @@ load();
 
 </body>
 </html>
-
