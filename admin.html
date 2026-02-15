@@ -1,0 +1,61 @@
+<h2>CroxyProxy 管理画面</h2>
+
+<p>GitHub Token:</p>
+<input id="token" style="width:400px">
+
+<p>deviceId（空ならGLOBAL）:</p>
+<input id="device">
+
+<br><br>
+
+<button onclick="setProxy(true)">ON</button>
+<button onclick="setProxy(false)">OFF</button>
+
+<pre id="log"></pre>
+
+<script>
+
+const owner="あなたのGitHub名";
+const repo="croxy-control";
+const path="control.json";
+
+async function setProxy(state){
+
+ const token=document.getElementById("token").value.trim();
+ const device=document.getElementById("device").value.trim();
+
+ const headers={
+   Authorization:"token "+token,
+   Accept:"application/vnd.github+json"
+ };
+
+ // control.json取得
+ let r=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{headers});
+ let j=await r.json();
+
+ let content=JSON.parse(atob(j.content));
+
+ if(device){
+   content.devices[device]=state;
+ }else{
+   content.global=state;
+ }
+
+ let updated=btoa(JSON.stringify(content,null,2));
+
+ // 更新
+ await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{
+   method:"PUT",
+   headers,
+   body:JSON.stringify({
+     message:"update proxy",
+     content:updated,
+     sha:j.sha
+   })
+ });
+
+ document.getElementById("log").textContent="更新しました";
+
+}
+
+</script>
