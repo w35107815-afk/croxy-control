@@ -94,6 +94,19 @@ async function save(){
 }
 
 load();
+ // register.jsonも読む
+try{
+ const r=await fetch("./register.json?t="+Date.now());
+ const reg=await r.json();
+
+ reg.requests.forEach(id=>{
+   if(!data.devices[id]){
+     data.devices[id]=false;
+   }
+ });
+
+}catch(e){}
+
 </script>
 
 </body>
