@@ -64,12 +64,12 @@ GitHub Token（保存時のみ必要）
 <script>
 
 const CONTROL_URL="./control.json";
-const REGISTER_URL="./register.json";
 const API_URL="https://api.github.com/repos/w35107815-afk/croxy-control/contents/control.json";
 
 let data={devices:{}};
 let sha=null;
 
+/* ===== 読み込み ===== */
 async function load(){
 
   const list=document.getElementById("list");
@@ -77,25 +77,9 @@ async function load(){
 
   try{
 
-    /* control.json */
     const res=await fetch(CONTROL_URL+"?t="+Date.now());
     data=await res.json();
 
-    /* register.json */
-    try{
-      const r=await fetch(REGISTER_URL+"?t="+Date.now());
-      if(r.ok){
-        const reg=await r.json();
-
-        reg.requests.forEach(id=>{
-          if(!data.devices[id]){
-            data.devices[id]=false;
-          }
-        });
-      }
-    }catch{}
-
-    /* GitHub sha */
     const api=await fetch(API_URL);
     const file=await api.json();
     sha=file.sha;
@@ -108,11 +92,24 @@ async function load(){
   }
 }
 
+/* ===== 描画 ===== */
 function render(){
 
   const list=document.getElementById("list");
   list.innerHTML="";
 
+  /* 追加UI */
+  const addBox=document.createElement("div");
+  addBox.style.marginBottom="15px";
+
+  addBox.innerHTML=`
+    <input id="newId" placeholder="device_xxxxx">
+    <button onclick="addDevice()">追加</button>
+  `;
+
+  list.appendChild(addBox);
+
+  /* 端末一覧 */
   Object.keys(data.devices).forEach(id=>{
 
     const row=document.createElement("div");
@@ -136,6 +133,24 @@ function render(){
   });
 }
 
+/* ===== 新端末追加 ===== */
+function addDevice(){
+
+  const id=document.getElementById("newId").value.trim();
+
+  if(!id){
+    alert("ID入力してください");
+    return;
+  }
+
+  if(!data.devices[id]){
+    data.devices[id]=false;
+  }
+
+  render();
+}
+
+/* ===== 保存 ===== */
 async function save(){
 
   const token=document.getElementById("token").value.trim();
@@ -157,13 +172,14 @@ async function save(){
     })
   });
 
-  alert("保存成功");
+  alert("保存成功（数秒で反映）");
   load();
 }
 
 load();
 
 </script>
+
 
 </body>
 </html>
