@@ -63,13 +63,15 @@ GitHub Token（保存時のみ必要）
 
 <script>
 
+<script>
+
 const CONTROL_URL="./control.json";
+const REGISTER_URL="./register.json";
 const API_URL="https://api.github.com/repos/w35107815-afk/croxy-control/contents/control.json";
 
 let data={devices:{}};
 let sha=null;
 
-/* 読み込み */
 async function load(){
 
   const list=document.getElementById("list");
@@ -77,9 +79,25 @@ async function load(){
 
   try{
 
+    /* control.json */
     const res=await fetch(CONTROL_URL+"?t="+Date.now());
     data=await res.json();
 
+    /* register.json */
+    try{
+      const r=await fetch(REGISTER_URL+"?t="+Date.now());
+      if(r.ok){
+        const reg=await r.json();
+
+        reg.requests.forEach(id=>{
+          if(!data.devices[id]){
+            data.devices[id]=false;
+          }
+        });
+      }
+    }catch{}
+
+    /* GitHub sha */
     const api=await fetch(API_URL);
     const file=await api.json();
     sha=file.sha;
@@ -92,7 +110,6 @@ async function load(){
   }
 }
 
-/* 描画 */
 function render(){
 
   const list=document.getElementById("list");
@@ -121,40 +138,35 @@ function render(){
   });
 }
 
-/* 保存 */
 async function save(){
 
   const token=document.getElementById("token").value.trim();
   if(!token){
-    alert("Tokenを入力してください");
+    alert("Token入力してください");
     return;
   }
 
-  try{
+  await fetch(API_URL,{
+    method:"PUT",
+    headers:{
+      "Authorization":"token "+token,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({
+      message:"update control",
+      content:btoa(JSON.stringify(data,null,2)),
+      sha:sha
+    })
+  });
 
-    await fetch(API_URL,{
-      method:"PUT",
-      headers:{
-        "Authorization":"token "+token,
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({
-        message:"update control",
-        content:btoa(JSON.stringify(data,null,2)),
-        sha:sha
-      })
-    });
-
-    alert("保存成功（数秒で拡張に反映）");
-    load();
-
-  }catch(e){
-    alert("保存失敗");
-    console.error(e);
-  }
+  alert("保存成功");
+  load();
 }
 
 load();
+
+</script>
+
 
 </script>
 
